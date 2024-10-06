@@ -3,6 +3,7 @@
 import tensorflow as tf
 from tensorflow.keras import layers
 from logzero import logger
+from tensorflow.keras.preprocessing.sequence import pad_sequences
 
 
 class Encoder(tf.keras.Model):
@@ -26,7 +27,8 @@ class Encoder(tf.keras.Model):
         Returns:
             states(tuple): 
         """
-        x = self.embedding(x)  # 
+        x  = pad_sequences(x, maxlen=100, padding='post', dtype='float32')
+        x = self.embedding(x)
         output, hidden_state, cell_state = self.lstm(x)
         return output, hidden_state, cell_state
 
@@ -59,12 +61,12 @@ class Seq2Seq(tf.keras.Model):
         Returns:
             _type_: _description_
         """
-        encoder = Encoder(hidden_dim=hidden_dim)
-        _, hidden_state, cell_state = encoder(x)
+        # encoder = Encoder(hidden_dim=self.hidden_dim)
+        _, hidden_state, cell_state = self.encoder(x)
         
-        input_token = tf.zeros((batch_size, 1))  # Start token of dimension 1
-        decoder = Decoder(output_dim, hidden_dim)
-        final_output = tf.reshape(decoder(input_token, hidden_state, cell_state), shape=(batch_size,))
+        input_token = tf.zeros((self.batch_size, 1))  # Start token of dimension 1
+        # decoder = Decoder(self.output_dim, self.hidden_dim)
+        final_output = tf.reshape(self.decoder(input_token, hidden_state, cell_state), shape=(self.batch_size,))
         
         return final_output
 

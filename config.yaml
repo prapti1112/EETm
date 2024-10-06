@@ -1,0 +1,15 @@
+# Training parameters
+epochs: 1
+batch_size: 16
+model_save_path: models/eetm1_enc_dec
+
+# Input parameters
+input_dims: 6
+input_len: 100
+
+# encoder parameters
+hidden_dim: 128
+
+# decoder parameters
+start_token_size: 10
+output_dim: 1 

@@ -1,11 +1,12 @@
 """Transformer model following 'Attention is All We Need' by Vaswani et al."""
-import logging
+import numpy as np
 import tensorflow as tf
 from logzero import logger
 from tensorflow.keras import layers
 
 
 # positional encoder implemented using reference from: https://machinelearningmastery.com/a-gentle-introduction-to-positional-encoding-in-transformer-models-part-1/
+@tf.autograph.experimental.do_not_convert
 def Positional_Encoder(x, d, n=10_000):
     """Generate positional encoding for the given input vector
 
@@ -20,12 +21,18 @@ def Positional_Encoder(x, d, n=10_000):
     encoding = []
     for record in x:
         record_encoding = []
+        
         for i in range(len(record)):
-            angle = record[i]/(n**(2*i/d))
-            record_encoding.append( np.sin(angle) if i%2==0 else np.cos(angle) )
+            angle = record[i]/ (n**(2*i/d))
+            record_encoding.append( tf.cond(
+                tf.equal(i % 2, 0),
+                lambda: tf.math.sin(angle),
+                lambda: tf.math.cos(angle)
+            ) )
         encoding.append(record_encoding)
 
-    return np.array(encoding)
+    # logger.debug(f"Final encoding: {type(encoding)}, {type(encoding[0])} {type(encoding[0][0])}")
+    return encoding
 
 
 class Encoder(tf.keras.Model):
@@ -105,20 +112,20 @@ class Transformer(tf.keras.Model):
         return final_output
 
 
-if __name__ == "__main__":
-    import numpy as np
+# if __name__ == "__main__":
+#     import numpy as np
 
-    input_dim = 6
-    output_dim = 1
-    hidden_dim = 128
-    seq_len = 100
-    batch_size = 1
-    dummpy_input = np.random.randn(batch_size, seq_len, input_dim)
-    logger.debug(dummpy_input.shape)
+#     input_dim = 6
+#     output_dim = 1
+#     hidden_dim = 128
+#     seq_len = 100
+#     batch_size = 1
+#     dummpy_input = np.random.randn(batch_size, seq_len, input_dim)
+#     logger.debug(dummpy_input.shape)
 
-    encoder = Encoder()
-    decoder = Decoder()
+#     encoder = Encoder()
+#     decoder = Decoder()
 
-    model = Transformer(encoder, decoder)
-    out = model(dummpy_input)
-    logger.debug(out.shape)
+#     model = Transformer(encoder, decoder)
+#     out = model(dummpy_input)
+#     logger.debug(out.shape)

@@ -36,7 +36,7 @@ def Positional_Encoder(x, d, n=10_000):
 
 
 class Encoder(tf.keras.Model):
-    # Default values are calculated base on the formular: key_dims * num_heads = embedding_dimension
+    # Default values are calculated base on the formula: key_dims * num_heads = embedding_dimension
     def __init__(self, mha_num_heads = 2, key_dim=3, seq_len=100):
         super(Encoder, self).__init__()
         self.d = mha_num_heads*key_dim
@@ -72,8 +72,7 @@ class Decoder(tf.keras.Model):
         self.query = layers.Dense(self.d, name="query_weights")
         self.key = layers.Dense(self.d, name="key_weights")
         self.value =layers.Dense(self.d, name="value_weights")
-        self.mha1 = layers.MultiHeadAttention(num_heads = mha_num_heads, key_dim=key_dim)
-        self.mha2 = layers.MultiHeadAttention(num_heads = mha_num_heads, key_dim=key_dim)
+        self.mha = layers.MultiHeadAttention(num_heads = mha_num_heads, key_dim=key_dim)
 
         self.layer_norm = layers.LayerNormalization(axis=-1, epsilon=1e-6)
     
@@ -86,10 +85,11 @@ class Decoder(tf.keras.Model):
         positional_encoding = Positional_Encoder(x, self.d)
         dec_out_prev += positional_encoding
 
-        dec_out_prev += self.mha1(query=self.query(dec_out_prev), key=self.key(dec_out_prev), value=self.value(dec_out_prev))
+        dec_out_prev += self.mha(query=self.query(dec_out_prev), key=self.key(dec_out_prev), value=self.value(dec_out_prev))
         dec_out_prev = self.layer_norm(dec_out_prev)
 
-        dec_out_prev += self.mha2(query=self.query(dec_out_prev), key=self.key(x), value=self.value(x), use_causal_mask=True)
+        # The runtime varaible use_causal_mask(bool) enables masking
+        dec_out_prev += self.mha(query=self.query(dec_out_prev), key=self.key(x), value=self.value(x), use_causal_mask=True)
         x = self.layer_norm(dec_out_prev)
 
         x_fc = layers.Dense(4*self.d, activation="relu")(x)       # set as per formula: 4*d_model

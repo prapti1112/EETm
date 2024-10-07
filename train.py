@@ -1,8 +1,9 @@
 """Training script for transformer"""
 import os
-import numpy as np
 import yaml
+import wandb
 import argparse
+import numpy as np
 import tensorflow as tf
 from pathlib import Path
 from logzero import logger
@@ -48,7 +49,12 @@ def train(config:dict):
     logger.debug(model)
 
     model.compile(optimizer='adam', loss='mae', run_eagerly=True)
-    history = model.fit(X, y, epochs=config["epochs"], batch_size=config["batch_size"], validation_split=0.2)
+    history = model.fit(X, y, epochs=config["epochs"], batch_size=config["batch_size"], validation_split=0.2,)
+    
+    # logging infor to wanndb
+    for epoch in range(len( history.history['loss'])):
+        wandb.log({"train_loss": history.history['loss'][epoch], "val_loss": history.history['val_loss'][epoch]})
+    wandb.finish()
 
     os.makedirs(config["model_save_path"], exist_ok=True) 
     tf.saved_model.save(model, config["model_save_path"])
@@ -57,5 +63,7 @@ def train(config:dict):
 
 if __name__ == "__main__":
     config = parse_args()
-    logger.debug(config)
+    wandb.init(project='EETm')
+
+    # logger.debug(config)
     train(config)
